@@ -52,6 +52,7 @@ export const MOCK_ARTICLES: Article[] = [
     imageUrl: 'https://images.unsplash.com/photo-1677442136019-21780ecad995?auto=format&fit=crop&q=80&w=1000',
     videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
     isFeatured: true,
+    isBreaking: true,
     tags: ['ذكاء_اصطناعي', 'تقنية', 'اقتصاد_رقمي'],
     readingTime: '5 دقائق'
   },
@@ -77,6 +78,7 @@ export const MOCK_ARTICLES: Article[] = [
     date: '13 أكتوبر 2023',
     imageUrl: 'https://images.unsplash.com/photo-1563986768609-322da13575f3?auto=format&fit=crop&q=80&w=1000',
     videoUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+    isBreaking: true,
     readingTime: '4 دقائق'
   },
   {

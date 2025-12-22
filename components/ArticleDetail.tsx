@@ -3,6 +3,8 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { Article } from '../types';
 import { MOCK_ARTICLES } from '../constants';
 import ArticleCard from './ArticleCard';
+import SummaryModal from './SummaryModal';
+import { summarizeArticle } from '../services/geminiService';
 import { 
   ArrowRight, 
   ArrowLeft,
@@ -24,7 +26,8 @@ import {
   Type,
   Plus,
   Minus,
-  RotateCcw
+  RotateCcw,
+  Sparkles
 } from 'lucide-react';
 
 interface Comment {
@@ -48,6 +51,12 @@ const ArticleDetail: React.FC<ArticleDetailProps> = ({ article, onBack, onNaviga
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
   const commentsPerPage = 10;
+
+  // Summary State
+  const [isSummaryOpen, setIsSummaryOpen] = useState(false);
+  const [summary, setSummary] = useState<string | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
 
   // Font Size Logic
   const DEFAULT_FONT_SIZE = 20;
@@ -81,7 +90,25 @@ const ArticleDetail: React.FC<ArticleDetailProps> = ({ article, onBack, onNaviga
     setNewComment('');
     setUserName('');
     setCurrentPage(1);
+    // Reset summary when switching articles
+    setSummary(null);
+    setSummaryError(null);
   }, [article.id]);
+
+  const handleSummarize = async () => {
+    setIsSummaryOpen(true);
+    if (summary) return;
+    setSummaryLoading(true);
+    setSummaryError(null);
+    try {
+      const result = await summarizeArticle(article.title, article.content);
+      setSummary(result);
+    } catch (err) {
+      setSummaryError(err instanceof Error ? err.message : 'فشل توليد الملخص الذكي');
+    } finally {
+      setSummaryLoading(false);
+    }
+  };
 
   const handleCopyLink = () => {
     const shareUrl = `${window.location.origin}/#article/${article.id}`;
@@ -174,8 +201,17 @@ const ArticleDetail: React.FC<ArticleDetailProps> = ({ article, onBack, onNaviga
                 <span className="hidden sm:inline">العودة للأخبار</span>
             </button>
             
-            {/* Font Size & Reading Mode Controls */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
+                {/* Smart Summary Button */}
+                <button 
+                  onClick={handleSummarize}
+                  className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black text-xs transition-all shadow-lg shadow-emerald-900/20 active:scale-95 group"
+                >
+                  <Sparkles size={16} className="group-hover:rotate-12 transition-transform" />
+                  <span>ملخص ذكي</span>
+                </button>
+
+                {/* Font Size & Reading Mode Controls */}
                 <div className="flex items-center gap-1 bg-white dark:bg-slate-900 px-2 py-1.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
                     <button 
                       onClick={handleDecreaseFont}
@@ -431,6 +467,17 @@ const ArticleDetail: React.FC<ArticleDetailProps> = ({ article, onBack, onNaviga
              </div>
         </div>
       </article>
+
+      {/* Summary Modal Integration */}
+      <SummaryModal 
+        isOpen={isSummaryOpen}
+        onClose={() => setIsSummaryOpen(false)}
+        title={article.title}
+        summary={summary}
+        loading={summaryLoading}
+        error={summaryError}
+        onOpenArticle={() => setIsSummaryOpen(false)} // Already on the article
+      />
     </div>
   );
 };

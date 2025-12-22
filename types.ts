@@ -10,6 +10,7 @@ export interface Article {
   imageUrl: string;
   videoUrl?: string;
   isFeatured?: boolean;
+  isBreaking?: boolean;
   tags?: string[];
   readingTime?: string;
   contentWarning?: string;
