@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { Article } from '../types';
 import { MOCK_ARTICLES } from '../constants';
-import { Calendar, User, Clock, ArrowUpRight, Sparkles, Heart, AlertTriangle, Share2, ArrowLeft, Play, Layers, ChevronDown, ChevronUp } from 'lucide-react';
+import { Calendar, User, Clock, ArrowUpRight, Sparkles, Heart, AlertTriangle, Share2, ArrowLeft, Play, Layers, ChevronDown, ChevronUp, ChevronUpIcon, ChevronDownIcon } from 'lucide-react';
 import { summarizeArticle } from '../services/geminiService';
 import SummaryModal from './SummaryModal';
 import ShareModal from './ShareModal';
@@ -12,9 +12,20 @@ interface ArticleCardProps {
   onClick: (article: Article) => void;
   variant?: 'vertical' | 'horizontal' | 'compact' | 'large';
   hideRelated?: boolean;
+  isReorderMode?: boolean;
+  onMoveUp?: () => void;
+  onMoveDown?: () => void;
 }
 
-const ArticleCard: React.FC<ArticleCardProps> = ({ article, onClick, variant = 'vertical', hideRelated = false }) => {
+const ArticleCard: React.FC<ArticleCardProps> = ({ 
+  article, 
+  onClick, 
+  variant = 'vertical', 
+  hideRelated = false,
+  isReorderMode = false,
+  onMoveUp,
+  onMoveDown
+}) => {
   const [isSummaryOpen, setIsSummaryOpen] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [summary, setSummary] = useState<string | null>(null);
@@ -93,10 +104,32 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, onClick, variant = '
       const result = await summarizeArticle(article.title, article.content);
       setSummary(result);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'فشل توليد الملخص');
+      setError(err instanceof Error ? err.message : 'فشل توليد الملخص الذكي');
     } finally {
       setLoading(false);
     }
+  };
+
+  const ReorderControls = ({ className = "" }: { className?: string }) => {
+    if (!isReorderMode) return null;
+    return (
+      <div className={`flex flex-col gap-2 ${className}`}>
+        <button 
+          onClick={(e) => { e.stopPropagation(); onMoveUp?.(); }}
+          className="p-2 bg-emerald-500 text-white rounded-full shadow-lg hover:bg-emerald-400 active:scale-95 transition-all"
+          title="نقل لأعلى"
+        >
+          <ChevronUpIcon size={20} />
+        </button>
+        <button 
+          onClick={(e) => { e.stopPropagation(); onMoveDown?.(); }}
+          className="p-2 bg-emerald-500 text-white rounded-full shadow-lg hover:bg-emerald-400 active:scale-95 transition-all"
+          title="نقل لأسفل"
+        >
+          <ChevronDownIcon size={20} />
+        </button>
+      </div>
+    );
   };
 
   const relatedArticles = useMemo(() => {
@@ -183,7 +216,6 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, onClick, variant = '
     );
   };
 
-  // Correct sharing URL for hash-based routing
   const articleUrl = `${window.location.origin}/#article/${article.id}`;
 
   const renderVariant = () => {
@@ -206,6 +238,8 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, onClick, variant = '
             isOverlay 
             className="absolute top-10 right-10 z-20 md:px-7 md:py-4 md:text-sm md:rounded-3xl shadow-2xl ring-4 ring-rose-500/30" 
           />
+
+          <ReorderControls className="absolute top-10 left-10 z-30" />
 
           <div className="relative h-full flex flex-col justify-end p-8 md:p-14 text-white">
             <div className="flex items-center justify-between mb-6">
@@ -291,7 +325,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, onClick, variant = '
       return (
         <div 
           onClick={() => onClick(article)}
-          className="group grid grid-cols-[theme(spacing.24)_1fr] gap-4 cursor-pointer p-4 rounded-xl hover:bg-white dark:hover:bg-slate-800 hover:shadow-xl hover:scale-[1.02] transition-all duration-300 border border-transparent hover:border-slate-100 dark:hover:border-slate-700"
+          className={`group grid grid-cols-[theme(spacing.24)_1fr] gap-4 cursor-pointer p-4 rounded-xl hover:bg-white dark:hover:bg-slate-800 hover:shadow-xl hover:scale-[1.02] transition-all duration-300 border border-transparent hover:border-slate-100 dark:hover:border-slate-700 relative ${isReorderMode ? 'ring-2 ring-emerald-500/20' : ''}`}
         >
           <div className="w-24 h-24 rounded-lg overflow-hidden relative shadow-sm">
               <img src={article.imageUrl} alt={article.title} className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500" />
@@ -324,6 +358,11 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, onClick, variant = '
                   <span className="flex items-center gap-1"><Calendar size={10} className="text-emerald-500" /> {article.date}</span>
               </div>
           </div>
+          {isReorderMode && (
+            <div className="absolute right-0 top-1/2 -translate-y-1/2 -mr-12 opacity-100 transition-opacity">
+              <ReorderControls />
+            </div>
+          )}
         </div>
       );
     }
@@ -332,9 +371,8 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, onClick, variant = '
       return (
         <div 
           onClick={() => onClick(article)}
-          className="group flex flex-col sm:flex-row gap-6 cursor-pointer bg-white dark:bg-slate-900 p-5 rounded-[2.5rem] shadow-sm hover:shadow-2xl hover:scale-[1.01] transition-all duration-500 border border-slate-100 dark:border-slate-800 h-full overflow-hidden"
+          className={`group flex flex-col sm:flex-row gap-6 cursor-pointer bg-white dark:bg-slate-900 p-5 rounded-[2.5rem] shadow-sm hover:shadow-2xl hover:scale-[1.01] transition-all duration-500 border border-slate-100 dark:border-slate-800 h-full overflow-hidden relative ${isReorderMode ? 'ring-2 ring-emerald-500/20' : ''}`}
         >
-          {/* Image Part */}
           <div className="flex-shrink-0 w-full sm:w-5/12 lg:w-4/12 h-56 sm:h-auto min-h-[220px] overflow-hidden rounded-3xl relative">
             <img 
               src={article.imageUrl} 
@@ -344,7 +382,6 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, onClick, variant = '
             
             <VideoPlayOverlay size="md" />
 
-            {/* Float Controls */}
             <div className="absolute top-4 right-4 flex flex-col gap-2">
               <div className="bg-white/95 dark:bg-slate-900/95 backdrop-blur-sm p-2.5 rounded-full text-slate-900 dark:text-white opacity-0 group-hover:opacity-100 translate-x-4 group-hover:translate-x-0 transition-all duration-300 shadow-lg flex items-center justify-center">
                   <ArrowUpRight size={18} />
@@ -355,8 +392,13 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, onClick, variant = '
             <div className="absolute inset-0 bg-gradient-to-t from-slate-950/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
           </div>
           
-          {/* Content Part */}
-          <div className="flex-grow flex flex-col justify-between py-1 gap-4">
+          {isReorderMode && (
+            <div className="absolute left-4 top-1/2 -translate-y-1/2 z-30">
+              <ReorderControls />
+            </div>
+          )}
+
+          <div className={`flex-grow flex flex-col justify-between py-1 gap-4 ${isReorderMode ? 'pl-16' : ''}`}>
             <div className="space-y-4">
               <div className="flex items-center justify-between flex-wrap gap-2">
                 <div className="flex items-center gap-3">
@@ -396,7 +438,6 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, onClick, variant = '
               </div>
             </div>
             
-            {/* Footer Metadata */}
             <div className="flex items-center justify-between pt-4 border-t border-slate-100/60 dark:border-slate-800 mt-2">
               <div className="flex flex-wrap items-center gap-4 sm:gap-6 text-xs text-slate-400 font-bold">
                 <span 
@@ -422,7 +463,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, onClick, variant = '
     return (
       <div 
         onClick={() => onClick(article)}
-        className="group bg-white dark:bg-slate-900 rounded-[2.5rem] overflow-hidden shadow-sm hover:shadow-2xl hover:scale-[1.03] hover:-translate-y-2 transition-all duration-500 border border-slate-100 dark:border-slate-800 cursor-pointer grid grid-rows-[auto_1fr] h-full"
+        className={`group bg-white dark:bg-slate-900 rounded-[2.5rem] overflow-hidden shadow-sm hover:shadow-2xl hover:scale-[1.03] hover:-translate-y-2 transition-all duration-500 border border-slate-100 dark:border-slate-800 cursor-pointer grid grid-rows-[auto_1fr] h-full relative ${isReorderMode ? 'ring-2 ring-emerald-500/20' : ''}`}
       >
         <div className="relative overflow-hidden h-64">
           <img src={article.imageUrl} alt={article.title} className="w-full h-full object-cover transform group-hover:scale-115 transition-transform duration-[2000ms]" />
@@ -440,7 +481,11 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, onClick, variant = '
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950/40 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
         </div>
         
-        <div className="p-7 grid grid-rows-[auto_auto_1fr_auto] gap-4">
+        {isReorderMode && (
+          <ReorderControls className="absolute top-1/2 left-4 -translate-y-1/2 z-30" />
+        )}
+
+        <div className={`p-7 grid grid-rows-[auto_auto_1fr_auto] gap-4 ${isReorderMode ? 'pl-16' : ''}`}>
           <div className="flex items-center justify-between gap-2 text-xs text-slate-400 font-bold">
               <div className="flex flex-wrap items-center gap-4">
                 <span className="flex items-center gap-1.5"><Calendar size={14} className="text-emerald-500" /> {article.date}</span>
@@ -503,33 +548,4 @@ const ArticleCard: React.FC<ArticleCardProps> = ({ article, onClick, variant = '
                   <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">فريق التحرير</span>
                 </div>
               </div>
-              <ArrowLeft size={16} className="text-slate-200 dark:text-slate-700 group-hover:text-emerald-500 group-hover:translate-x-[-6px] transition-all duration-300" />
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  return (
-    <>
-      {renderVariant()}
-      <SummaryModal 
-        isOpen={isSummaryOpen} 
-        onClose={() => setIsSummaryOpen(false)} 
-        title={article.title} 
-        summary={summary} 
-        loading={loading} 
-        error={error} 
-        onOpenArticle={() => onClick(article)} 
-      />
-      <ShareModal 
-        isOpen={isShareOpen} 
-        onClose={() => setIsShareOpen(false)} 
-        title={article.title} 
-        url={articleUrl} 
-      />
-    </>
-  );
-};
-
-export default ArticleCard;
+              <ArrowLeft size={16} className="text-slate-200 dark:text-slate-700 group-hover:text-

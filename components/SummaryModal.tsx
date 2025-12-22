@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { X, Sparkles, Loader2, ArrowLeft } from 'lucide-react';
+import { X, Sparkles, Loader2, ArrowLeft, ArrowRight } from 'lucide-react';
 
 interface SummaryModalProps {
   isOpen: boolean;
@@ -10,6 +10,7 @@ interface SummaryModalProps {
   loading: boolean;
   error: string | null;
   onOpenArticle: () => void;
+  showViewFullButton?: boolean;
 }
 
 const SummaryModal: React.FC<SummaryModalProps> = ({ 
@@ -19,57 +20,61 @@ const SummaryModal: React.FC<SummaryModalProps> = ({
   summary, 
   loading, 
   error,
-  onOpenArticle
+  onOpenArticle,
+  showViewFullButton = true
 }) => {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-md animate-fade-in">
+    <div className="fixed inset-0 z-[120] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md animate-fade-in" onClick={onClose}>
       <div 
-        className="bg-white w-full max-w-xl rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-200 relative animate-fade-in"
+        className="bg-white dark:bg-slate-900 w-full max-w-xl rounded-[2.5rem] shadow-[0_20px_50px_rgba(0,0,0,0.3)] overflow-hidden border border-slate-200 dark:border-slate-800 relative animate-fade-in"
         onClick={(e) => e.stopPropagation()}
       >
         <button 
           onClick={onClose}
-          className="absolute top-6 left-6 p-2 bg-slate-100 hover:bg-slate-200 text-slate-500 rounded-full transition-colors z-10"
+          className="absolute top-6 left-6 p-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 rounded-full transition-colors z-10"
         >
           <X size={20} />
         </button>
 
         <div className="p-8 md:p-10">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-12 h-12 bg-emerald-100 rounded-2xl flex items-center justify-center text-emerald-600">
-              <Sparkles size={24} className="fill-current" />
+          <div className="flex items-center gap-4 mb-8">
+            <div className="w-14 h-14 bg-emerald-100 dark:bg-emerald-950/40 rounded-2xl flex items-center justify-center text-emerald-600 dark:text-emerald-400 shadow-inner">
+              <Sparkles size={28} className="fill-current animate-pulse" />
             </div>
             <div>
-              <h3 className="text-xl font-black text-slate-900 leading-none">الملخص الذكي</h3>
-              <p className="text-xs text-emerald-600 font-bold mt-1">مدعوم بذكاء Gemini</p>
+              <h3 className="text-xl font-black text-slate-900 dark:text-white leading-none font-tajawal">الملخص الذكي</h3>
+              <p className="text-xs text-emerald-600 dark:text-emerald-400 font-bold mt-1 uppercase tracking-widest">مدعوم بذكاء Gemini AI</p>
             </div>
           </div>
 
-          <h4 className="text-2xl font-bold text-slate-800 mb-8 font-amiri leading-tight">
+          <h4 className="text-2xl font-black text-slate-800 dark:text-slate-100 mb-8 font-amiri leading-tight border-r-4 border-emerald-500 pr-4">
             {title}
           </h4>
 
-          <div className="min-h-[200px] flex flex-col justify-center">
+          <div className="min-h-[220px] flex flex-col justify-center">
             {loading ? (
               <div className="flex flex-col items-center justify-center py-10 text-center">
-                <Loader2 size={48} className="text-emerald-500 animate-spin mb-4" />
-                <p className="text-slate-500 font-medium animate-pulse">جاري استخلاص الأفكار الرئيسية...</p>
+                <div className="relative mb-6">
+                  <Loader2 size={56} className="text-emerald-500 animate-spin" />
+                  <Sparkles size={20} className="absolute inset-0 m-auto text-emerald-400 opacity-50" />
+                </div>
+                <p className="text-slate-500 dark:text-slate-400 font-black animate-pulse font-tajawal">جاري استخلاص أهم الرؤى والأفكار...</p>
               </div>
             ) : error ? (
-              <div className="p-6 bg-red-50 text-red-600 rounded-2xl text-center border border-red-100">
-                <p>{error}</p>
+              <div className="p-8 bg-red-50 dark:bg-red-950/20 text-red-600 dark:text-red-400 rounded-3xl text-center border border-red-100 dark:border-red-900/30">
+                <p className="font-bold mb-4">{error}</p>
                 <button 
                   onClick={() => window.location.reload()} 
-                  className="mt-4 text-sm font-bold underline"
+                  className="px-6 py-2 bg-red-600 text-white rounded-xl font-bold text-sm hover:bg-red-700 transition-colors"
                 >
                   حاول مرة أخرى
                 </button>
               </div>
             ) : (
-              <div className="prose prose-slate prose-lg">
-                <div className="text-slate-700 font-amiri text-xl leading-relaxed whitespace-pre-line bg-emerald-50/30 p-6 rounded-3xl border border-emerald-100/50">
+              <div className="prose prose-slate dark:prose-invert prose-lg max-w-none">
+                <div className="text-slate-700 dark:text-slate-300 font-amiri text-2xl leading-relaxed whitespace-pre-line bg-slate-50 dark:bg-slate-950/50 p-8 rounded-[2rem] border border-slate-100 dark:border-slate-800 shadow-inner italic">
                   {summary}
                 </div>
               </div>
@@ -77,24 +82,28 @@ const SummaryModal: React.FC<SummaryModalProps> = ({
           </div>
 
           <div className="mt-10 flex flex-col sm:flex-row gap-4">
-            <button 
-              onClick={onOpenArticle}
-              className="flex-1 bg-slate-900 text-white py-4 rounded-2xl font-bold flex items-center justify-center gap-2 hover:bg-slate-800 transition-all shadow-lg active:scale-95"
-            >
-              إقرأ المقال كاملاً <ArrowLeft size={18} />
-            </button>
+            {showViewFullButton && !loading && !error && (
+              <button 
+                onClick={onOpenArticle}
+                className="flex-1 bg-emerald-600 text-white py-4 rounded-2xl font-black flex items-center justify-center gap-3 hover:bg-emerald-500 transition-all shadow-xl shadow-emerald-900/20 active:scale-95 group"
+              >
+                <span>إقرأ المقال كاملاً</span>
+                <ArrowLeft size={20} className="group-hover:translate-x-[-4px] transition-transform" />
+              </button>
+            )}
             <button 
               onClick={onClose}
-              className="px-8 py-4 bg-slate-100 text-slate-600 rounded-2xl font-bold hover:bg-slate-200 transition-all"
+              className={`py-4 rounded-2xl font-black transition-all ${
+                !showViewFullButton || loading || error 
+                ? 'w-full bg-slate-900 dark:bg-slate-800 text-white hover:bg-slate-800' 
+                : 'px-8 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700'
+              }`}
             >
               إغلاق
             </button>
           </div>
         </div>
       </div>
-      
-      {/* Backdrop click to close */}
-      <div className="absolute inset-0 -z-10" onClick={onClose}></div>
     </div>
   );
 };

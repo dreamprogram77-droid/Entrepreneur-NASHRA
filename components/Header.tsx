@@ -1,8 +1,10 @@
 
-import React, { useState, useRef, useEffect } from 'react';
-import { Menu, X, Rocket, Search, ChevronLeft, Play, ArrowLeft, Twitter, Linkedin, Facebook, Sun, Moon, Calendar } from 'lucide-react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { Menu, X, Rocket, Search, ChevronLeft, Play, ArrowLeft, Twitter, Linkedin, Facebook, Sun, Moon, Calendar, Filter, XCircle, Sparkles } from 'lucide-react';
 import { NAV_LINKS, MOCK_ARTICLES } from '../constants';
-import { Article } from '../types';
+import { Article, Category } from '../types';
+import { summarizeArticle } from '../services/geminiService';
+import SummaryModal from './SummaryModal';
 
 interface HeaderProps {
   currentView: string;
@@ -16,18 +18,26 @@ const Header: React.FC<HeaderProps> = ({ currentView, onNavigate, onArticleSelec
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchCategory, setSearchCategory] = useState<Category | 'ALL'>('ALL');
+  const [dateFilter, setDateFilter] = useState<'any' | 'today' | 'week' | 'month'>('any');
+  
+  // Search Result Summary States
+  const [activeSummaryArticle, setActiveSummaryArticle] = useState<Article | null>(null);
+  const [isSummaryOpen, setIsSummaryOpen] = useState(false);
+  const [summaryText, setSummaryText] = useState<string | null>(null);
+  const [summaryLoading, setSummaryLoading] = useState(false);
+  const [summaryError, setSummaryError] = useState<string | null>(null);
+
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [scrolled, setScrolled] = useState(false);
   const [formattedDate, setFormattedDate] = useState('');
 
   useEffect(() => {
     const handleScroll = () => {
-      // Threshold set to approximately the height of the top utility bar (40px)
       setScrolled(window.scrollY > 40);
     };
     window.addEventListener('scroll', handleScroll, { passive: true });
     
-    // Set formatted Arabic date
     const options: Intl.DateTimeFormatOptions = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' };
     setFormattedDate(new Intl.DateTimeFormat('ar-SA', options).format(new Date()));
     
@@ -59,14 +69,60 @@ const Header: React.FC<HeaderProps> = ({ currentView, onNavigate, onArticleSelec
   const handleSearchClose = () => {
     setIsSearchOpen(false);
     setSearchQuery('');
+    setSearchCategory('ALL');
+    setDateFilter('any');
   };
 
-  const filteredArticles = searchQuery.trim()
-    ? MOCK_ARTICLES.filter(article =>
-        article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        article.excerpt.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    : [];
+  const clearFilters = () => {
+    setSearchQuery('');
+    setSearchCategory('ALL');
+    setDateFilter('any');
+  };
+
+  const handleSummarizeResult = async (e: React.MouseEvent, article: Article) => {
+    e.stopPropagation();
+    setActiveSummaryArticle(article);
+    setSummaryText(null);
+    setSummaryError(null);
+    setIsSummaryOpen(true);
+    setSummaryLoading(true);
+
+    try {
+      const result = await summarizeArticle(article.title, article.content);
+      setSummaryText(result);
+    } catch (err) {
+      setSummaryError(err instanceof Error ? err.message : 'فشل توليد الملخص');
+    } finally {
+      setSummaryLoading(false);
+    }
+  };
+
+  const filteredArticles = useMemo(() => {
+    return MOCK_ARTICLES.filter(article => {
+      const query = searchQuery.toLowerCase().trim();
+      const matchesText = query === '' || 
+        article.title.toLowerCase().includes(query) ||
+        article.excerpt.toLowerCase().includes(query) ||
+        article.tags?.some(tag => tag.toLowerCase().includes(query));
+
+      const matchesCategory = searchCategory === 'ALL' || article.category === searchCategory;
+
+      let matchesDate = true;
+      if (dateFilter !== 'any') {
+        const todayStr = "15 أكتوبر"; 
+        if (dateFilter === 'today') {
+          matchesDate = article.date.includes(todayStr);
+        } else if (dateFilter === 'week') {
+          const days = ['10', '11', '12', '13', '14', '15'];
+          matchesDate = days.some(d => article.date.startsWith(d));
+        } else if (dateFilter === 'month') {
+          matchesDate = article.date.includes('أكتوبر');
+        }
+      }
+
+      return matchesText && matchesCategory && matchesDate;
+    });
+  }, [searchQuery, searchCategory, dateFilter]);
 
   const handleSearchResultClick = (article: Article) => {
     onArticleSelect(article);
@@ -90,7 +146,6 @@ const Header: React.FC<HeaderProps> = ({ currentView, onNavigate, onArticleSelec
   return (
     <>
       <header className="z-40 w-full relative">
-        {/* Top Utility Bar - This part scrolls away */}
         <div className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-800 py-2 hidden md:block h-10">
           <div className="container mx-auto px-4 flex justify-between items-center text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-widest">
             <div className="flex items-center gap-6">
@@ -116,7 +171,6 @@ const Header: React.FC<HeaderProps> = ({ currentView, onNavigate, onArticleSelec
           </div>
         </div>
 
-        {/* Main Navigation Bar - This part sticks to top */}
         <div 
           className={`sticky top-0 z-50 transition-all duration-500 ${
             scrolled 
@@ -127,7 +181,6 @@ const Header: React.FC<HeaderProps> = ({ currentView, onNavigate, onArticleSelec
           <div className="container mx-auto px-4">
             <div className="flex items-center justify-between">
               
-              {/* Logo */}
               <div 
                 className="flex items-center gap-2 cursor-pointer group" 
                 onClick={() => handleNavClick('home')}
@@ -141,7 +194,6 @@ const Header: React.FC<HeaderProps> = ({ currentView, onNavigate, onArticleSelec
                 </div>
               </div>
 
-              {/* Desktop Nav */}
               <nav className="hidden lg:flex items-center gap-1">
                 {NAV_LINKS.map((link) => (
                   <button
@@ -158,7 +210,6 @@ const Header: React.FC<HeaderProps> = ({ currentView, onNavigate, onArticleSelec
                 ))}
               </nav>
 
-              {/* Desktop Actions */}
               <div className="hidden md:flex items-center gap-3">
                 <button 
                   onClick={() => setIsSearchOpen(true)}
@@ -173,7 +224,6 @@ const Header: React.FC<HeaderProps> = ({ currentView, onNavigate, onArticleSelec
                 </button>
               </div>
 
-              {/* Mobile Menu Button & Search Toggle */}
               <div className="flex items-center gap-2 md:hidden">
                 <button 
                   onClick={() => setIsSearchOpen(true)}
@@ -190,7 +240,6 @@ const Header: React.FC<HeaderProps> = ({ currentView, onNavigate, onArticleSelec
               </div>
             </div>
 
-            {/* Mobile Menu - Now inside the sticky container to remain sticky when open */}
             {isMenuOpen && (
               <div className="md:hidden bg-white/95 dark:bg-slate-950/95 backdrop-blur-xl border-t border-slate-100 dark:border-slate-800 absolute top-full left-0 w-full shadow-2xl animate-fade-in z-50 overflow-hidden">
                 <div className="container mx-auto px-4 py-6 flex flex-col gap-2">
@@ -231,94 +280,185 @@ const Header: React.FC<HeaderProps> = ({ currentView, onNavigate, onArticleSelec
         </div>
       </header>
 
-      {/* Search Modal */}
       {isSearchOpen && (
-        <div className="fixed inset-0 z-[100] flex items-start justify-center pt-4 md:pt-24 bg-slate-900/60 backdrop-blur-md animate-fade-in px-4">
-          <div className="bg-white dark:bg-slate-900 w-full max-w-3xl rounded-[2rem] shadow-2xl overflow-hidden flex flex-col max-h-[80vh] border border-slate-200 dark:border-slate-800">
-            <div className="p-4 md:p-6 border-b border-slate-100 dark:border-slate-800 flex items-center gap-4 bg-white dark:bg-slate-900">
-              <Search className="text-emerald-500" size={28} />
-              <input
-                ref={searchInputRef}
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="ابحث عن مقالات، أخبار، أو مواضيع..."
-                className="flex-grow text-xl font-black placeholder:text-slate-300 dark:placeholder:text-slate-700 focus:outline-none text-slate-800 dark:text-white bg-transparent placeholder:font-normal text-right font-tajawal"
-              />
-              <button 
-                onClick={handleSearchClose}
-                className="w-10 h-10 flex items-center justify-center bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 rounded-full transition-colors"
-              >
-                <X size={20} />
-              </button>
+        <div className="fixed inset-0 z-[100] flex items-start justify-center pt-4 md:pt-16 bg-slate-900/60 backdrop-blur-md animate-fade-in px-4">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-4xl rounded-[2.5rem] shadow-2xl overflow-hidden flex flex-col max-h-[85vh] border border-slate-200 dark:border-slate-800">
+            <div className="p-5 md:p-8 border-b border-slate-100 dark:border-slate-800 flex flex-col gap-6 bg-white dark:bg-slate-900">
+              <div className="flex items-center gap-4">
+                <Search className="text-emerald-500 shrink-0" size={32} />
+                <input
+                  ref={searchInputRef}
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  placeholder="ابحث عن مقالات، أخبار، أو مواضيع..."
+                  className="flex-grow text-2xl font-black placeholder:text-slate-300 dark:placeholder:text-slate-700 focus:outline-none text-slate-800 dark:text-white bg-transparent placeholder:font-normal text-right font-tajawal"
+                />
+                <button 
+                  onClick={handleSearchClose}
+                  className="w-12 h-12 flex items-center justify-center bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 text-slate-500 dark:text-slate-400 rounded-full transition-colors"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+
+              <div className="flex flex-col gap-4 animate-fade-in">
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                    <Filter size={12} />
+                    التصنيف
+                  </div>
+                  <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2">
+                    <button 
+                      onClick={() => setSearchCategory('ALL')}
+                      className={`px-4 py-2 rounded-xl text-xs font-black transition-all border whitespace-nowrap ${searchCategory === 'ALL' ? 'bg-emerald-600 text-white border-emerald-600 shadow-md' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-100 dark:border-slate-700 hover:border-emerald-200'}`}
+                    >
+                      الكل
+                    </button>
+                    {Object.values(Category).filter(c => c !== Category.ALL).map((cat) => (
+                      <button 
+                        key={cat}
+                        onClick={() => setSearchCategory(cat)}
+                        className={`px-4 py-2 rounded-xl text-xs font-black transition-all border whitespace-nowrap ${searchCategory === cat ? 'bg-emerald-600 text-white border-emerald-600 shadow-md' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-100 dark:border-slate-700 hover:border-emerald-200'}`}
+                      >
+                        {cat}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2 text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">
+                    <Calendar size={12} />
+                    تاريخ النشر
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {[
+                      { id: 'any', label: 'في أي وقت' },
+                      { id: 'today', label: 'اليوم' },
+                      { id: 'week', label: 'هذا الأسبوع' },
+                      { id: 'month', label: 'هذا الشهر' }
+                    ].map((btn) => (
+                      <button 
+                        key={btn.id}
+                        onClick={() => setDateFilter(btn.id as any)}
+                        className={`px-4 py-2 rounded-xl text-xs font-black transition-all border whitespace-nowrap ${dateFilter === btn.id ? 'bg-slate-900 dark:bg-emerald-600 text-white border-slate-900 dark:border-emerald-600 shadow-md' : 'bg-slate-50 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-100 dark:border-slate-700 hover:border-emerald-200'}`}
+                      >
+                        {btn.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div className="overflow-y-auto p-4 md:p-6 bg-slate-50/50 dark:bg-slate-900/50 flex-grow no-scrollbar">
-              {searchQuery.trim() === '' ? (
-                <div className="text-center py-16 text-slate-400 dark:text-slate-600">
-                  <div className="w-16 h-16 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-4">
-                    <Search size={32} className="opacity-40" />
-                  </div>
-                  <p className="font-bold text-lg">اكتب للبدء في البحث...</p>
-                </div>
-              ) : filteredArticles.length > 0 ? (
-                <div className="grid gap-4">
-                  <p className="text-sm font-black text-slate-400 dark:text-slate-600 mb-2 uppercase tracking-widest">نتائج البحث ({filteredArticles.length})</p>
+            <div className="overflow-y-auto p-5 md:p-8 bg-slate-50/50 dark:bg-slate-900/50 flex-grow no-scrollbar">
+              <div className="flex items-center justify-between mb-6">
+                <p className="text-sm font-black text-slate-400 dark:text-slate-600 uppercase tracking-widest">
+                  نتائج البحث ({filteredArticles.length})
+                </p>
+                {(searchCategory !== 'ALL' || dateFilter !== 'any' || searchQuery !== '') && (
+                  <button 
+                    onClick={clearFilters}
+                    className="flex items-center gap-2 text-xs font-bold text-rose-500 hover:text-rose-600 transition-colors"
+                  >
+                    <XCircle size={14} />
+                    مسح التصفية
+                  </button>
+                )}
+              </div>
+
+              {filteredArticles.length > 0 ? (
+                <div className="grid gap-6">
                   {filteredArticles.map((article) => (
                     <div 
                       key={article.id}
+                      className="bg-white dark:bg-slate-800 p-4 rounded-3xl border border-slate-100 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-700 hover:shadow-2xl cursor-pointer transition-all flex flex-col sm:flex-row gap-5 group"
                       onClick={() => handleSearchResultClick(article)}
-                      className="bg-white dark:bg-slate-800 p-3 rounded-2xl border border-slate-100 dark:border-slate-700 hover:border-emerald-300 dark:hover:border-emerald-700 hover:shadow-xl cursor-pointer transition-all flex gap-4 group"
                     >
-                      <div className="w-24 h-24 flex-shrink-0 rounded-xl overflow-hidden bg-slate-200 dark:bg-slate-700 relative">
+                      <div className="w-full sm:w-32 h-32 flex-shrink-0 rounded-2xl overflow-hidden bg-slate-200 dark:bg-slate-700 relative shadow-sm">
                         <img 
                           src={article.imageUrl} 
                           alt={article.title} 
-                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                          className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                         />
                         {article.videoUrl && (
                           <div className="absolute inset-0 flex items-center justify-center bg-slate-900/30">
-                            <div className="bg-white/90 dark:bg-slate-900/90 rounded-full p-1.5 shadow-sm">
-                              <Play size={14} className="text-emerald-600 fill-emerald-600" />
+                            <div className="bg-white/90 dark:bg-slate-900/90 rounded-full p-2 shadow-sm">
+                              <Play size={16} className="text-emerald-600 fill-emerald-600" />
                             </div>
                           </div>
                         )}
                       </div>
                       <div className="flex-grow flex flex-col justify-center">
-                        <div className="flex items-center gap-2 mb-1.5">
-                          <span className="text-[10px] font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-950/30 w-fit px-2 py-0.5 rounded-full uppercase tracking-wider">{article.category}</span>
-                          {article.videoUrl && (
-                            <span className="text-[10px] font-black text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded uppercase flex items-center gap-1">
-                              فيديو <Play size={8} className="fill-current" />
+                        <div className="flex items-center justify-between">
+                          <div className="flex flex-wrap items-center gap-3 mb-2">
+                            <span className="text-[11px] font-black text-emerald-600 bg-emerald-50 dark:bg-emerald-950/40 px-3 py-1 rounded-full uppercase tracking-wider">
+                              {article.category}
                             </span>
-                          )}
+                            <span className="text-[11px] font-bold text-slate-400 flex items-center gap-1.5">
+                              <Calendar size={12} className="text-emerald-500" />
+                              {article.date}
+                            </span>
+                          </div>
+                          {/* Summarize shortcut in search results */}
+                          <button 
+                            onClick={(e) => handleSummarizeResult(e, article)}
+                            className="p-2 text-slate-400 hover:text-emerald-500 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-slate-700 rounded-xl transition-all"
+                            title="ملخص ذكي"
+                          >
+                            <Sparkles size={18} />
+                          </button>
                         </div>
-                        <h4 className="font-black text-lg text-slate-900 dark:text-white group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors line-clamp-1 mb-1 font-amiri">
+                        <h4 className="font-black text-xl text-slate-900 dark:text-white group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors line-clamp-2 mb-2 font-amiri leading-snug">
                           {article.title}
                         </h4>
-                        <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-1 leading-relaxed mb-2">
+                        <p className="text-sm text-slate-500 dark:text-slate-400 line-clamp-1 leading-relaxed mb-3">
                           {article.excerpt}
                         </p>
-                        <div className="flex items-center gap-1.5 text-xs font-black text-emerald-600 dark:text-emerald-400 group-hover:translate-x-[-4px] transition-transform">
+                        <div className="flex items-center gap-2 text-xs font-black text-emerald-600 dark:text-emerald-400 group-hover:translate-x-[-6px] transition-transform">
                           <span>عرض المقال</span>
-                          <ArrowLeft size={12} />
+                          <ArrowLeft size={14} />
                         </div>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-16 text-slate-400 dark:text-slate-600">
-                  <p className="font-bold">لا توجد نتائج مطابقة لـ "{searchQuery}"</p>
+                <div className="text-center py-20 text-slate-400 dark:text-slate-600">
+                  <div className="w-20 h-20 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6">
+                    <Search size={40} className="opacity-30" />
+                  </div>
+                  <p className="font-black text-xl mb-2">عذراً، لم نجد نتائج مطابقة</p>
+                  <p className="text-sm font-medium">جرب تغيير معايير البحث أو تصفية التاريخ والتصنيف</p>
+                  <button 
+                    onClick={clearFilters}
+                    className="mt-8 px-8 py-3 bg-emerald-600 text-white rounded-2xl font-black text-sm hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-100 dark:shadow-none"
+                  >
+                    إعادة ضبط البحث
+                  </button>
                 </div>
               )}
             </div>
           </div>
-          
-          {/* Close on backdrop click */}
           <div className="absolute inset-0 -z-10" onClick={handleSearchClose}></div>
         </div>
       )}
+
+      {/* Summary Modal for Search results */}
+      <SummaryModal 
+        isOpen={isSummaryOpen}
+        onClose={() => setIsSummaryOpen(false)}
+        title={activeSummaryArticle?.title || ''}
+        summary={summaryText}
+        loading={summaryLoading}
+        error={summaryError}
+        onOpenArticle={() => {
+          if (activeSummaryArticle) handleSearchResultClick(activeSummaryArticle);
+          setIsSummaryOpen(false);
+        }}
+        showViewFullButton={true}
+      />
     </>
   );
 };

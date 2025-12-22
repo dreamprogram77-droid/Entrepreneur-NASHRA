@@ -10,7 +10,7 @@ import Skeleton from './components/Skeleton';
 import Footer from './components/Footer';
 import { MOCK_ARTICLES, NAV_LINKS, MOCK_AUTHORS, AuthorInfo } from './constants';
 import { Article, Category } from './types';
-import { TrendingUp, Zap, Sparkles, Headphones, PlayCircle, Bookmark, Filter, SearchX } from 'lucide-react';
+import { TrendingUp, Zap, Sparkles, Headphones, PlayCircle, Bookmark, Filter, SearchX, ArrowUpDown, Check } from 'lucide-react';
 
 const App: React.FC = () => {
   // Initialize view from hash or default to home
@@ -22,9 +22,12 @@ const App: React.FC = () => {
   const [currentView, setCurrentView] = useState(getInitialView());
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
   const [selectedAuthor, setSelectedAuthor] = useState<AuthorInfo | null>(null);
-  const [filteredArticles, setFilteredArticles] = useState<Article[]>(MOCK_ARTICLES);
+  
+  // Manage the master list of articles in state to allow reordering
+  const [masterArticles, setMasterArticles] = useState<Article[]>(MOCK_ARTICLES);
   const [isLoading, setIsLoading] = useState(false);
   const [activeCategory, setActiveCategory] = useState<Category>(Category.ALL);
+  const [isReorderMode, setIsReorderMode] = useState(false);
   
   // Dark Mode State
   const [isDarkMode, setIsDarkMode] = useState(() => {
@@ -41,7 +44,7 @@ const App: React.FC = () => {
       // Handle article routing
       if (hash.startsWith('article/')) {
         const id = hash.split('/')[1];
-        const article = MOCK_ARTICLES.find(a => a.id === id);
+        const article = masterArticles.find(a => a.id === id);
         if (article) {
           setSelectedArticle(article);
           setSelectedAuthor(null);
@@ -77,7 +80,7 @@ const App: React.FC = () => {
     handleHashChange();
 
     return () => window.removeEventListener('hashchange', handleHashChange);
-  }, []);
+  }, [masterArticles]);
 
   // Sync Theme
   useEffect(() => {
@@ -99,6 +102,23 @@ const App: React.FC = () => {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   }, [currentView, selectedArticle, selectedAuthor]);
 
+  const filteredArticles = useMemo(() => {
+    if (currentView === 'home' || currentView === 'analyst') {
+      return masterArticles;
+    } else {
+      const categoryMap: { [key: string]: Category } = {
+        'tech': Category.TECH,
+        'business': Category.BUSINESS,
+        'startups': Category.STARTUPS,
+        'ai': Category.AI,
+        'crypto': Category.CRYPTO
+      };
+      
+      const category = categoryMap[currentView];
+      return category ? masterArticles.filter(a => a.category === category) : masterArticles;
+    }
+  }, [currentView, masterArticles]);
+
   useEffect(() => {
     // Only show loading for main views
     if (currentView === 'article' || currentView === 'author') return;
@@ -107,23 +127,6 @@ const App: React.FC = () => {
     setActiveCategory(Category.ALL);
     
     const timer = setTimeout(() => {
-      if (currentView === 'home' || currentView === 'analyst') {
-        setFilteredArticles(MOCK_ARTICLES);
-      } else {
-        const categoryMap: { [key: string]: Category } = {
-          'tech': Category.TECH,
-          'business': Category.BUSINESS,
-          'startups': Category.STARTUPS,
-          'ai': Category.AI
-        };
-        
-        const category = categoryMap[currentView];
-        if (category) {
-          setFilteredArticles(MOCK_ARTICLES.filter(a => a.category === category));
-        } else {
-           setFilteredArticles(MOCK_ARTICLES);
-        }
-      }
       setIsLoading(false);
     }, 800);
 
@@ -139,6 +142,24 @@ const App: React.FC = () => {
   };
 
   const toggleDarkMode = () => setIsDarkMode(!isDarkMode);
+
+  // Logic to move an article within the feed
+  const moveArticle = (id: string, direction: 'up' | 'down') => {
+    setMasterArticles(prev => {
+      const index = prev.findIndex(a => a.id === id);
+      if (index === -1) return prev;
+      
+      const newIndex = direction === 'up' ? index - 1 : index + 1;
+      if (newIndex < 0 || newIndex >= prev.length) return prev;
+      
+      const newList = [...prev];
+      const temp = newList[index];
+      newList[index] = newList[newIndex];
+      newList[newIndex] = temp;
+      
+      return newList;
+    });
+  };
 
   // Compute feed sections
   const mainFeatured = useMemo(() => filteredArticles.find(a => a.isFeatured) || filteredArticles[0], [filteredArticles]);
@@ -177,7 +198,7 @@ const App: React.FC = () => {
       );
     }
 
-    const featuredStories = MOCK_ARTICLES
+    const featuredStories = masterArticles
       .filter(a => a.isFeatured)
       .slice(0, 3);
 
@@ -212,7 +233,10 @@ const App: React.FC = () => {
                  <ArticleCard 
                     article={mainFeatured} 
                     onClick={handleArticleClick} 
-                    variant="large" 
+                    variant="large"
+                    isReorderMode={isReorderMode}
+                    onMoveUp={() => moveArticle(mainFeatured.id, 'up')}
+                    onMoveDown={() => moveArticle(mainFeatured.id, 'down')}
                  />
               </div>
 
@@ -234,6 +258,16 @@ const App: React.FC = () => {
                                 {article.title}
                             </h3>
                         </div>
+                        {isReorderMode && (
+                          <div className="absolute top-4 left-4 flex flex-col gap-2 z-20">
+                            <button 
+                              onClick={(e) => { e.stopPropagation(); moveArticle(article.id, 'up'); }}
+                              className="p-2 bg-white/90 dark:bg-slate-900/90 rounded-full text-emerald-600 shadow-lg hover:scale-110 transition-transform"
+                            >
+                              <TrendingUp size={20} />
+                            </button>
+                          </div>
+                        )}
                      </div>
                  ))}
                  {sideHeroArticles.length < 2 && (
@@ -271,6 +305,9 @@ const App: React.FC = () => {
                         article={article} 
                         onClick={handleArticleClick} 
                         variant="compact" 
+                        isReorderMode={isReorderMode}
+                        onMoveUp={() => moveArticle(article.id, 'up')}
+                        onMoveDown={() => moveArticle(article.id, 'down')}
                       />
                     ))
                   )}
@@ -280,10 +317,20 @@ const App: React.FC = () => {
 
             <div className="space-y-8">
                 <div className="flex flex-col md:flex-row md:items-end justify-between border-b-4 border-slate-100 dark:border-slate-800 pb-5 gap-6">
-                    <h3 className="text-3xl font-black text-slate-900 dark:text-white flex items-center gap-3">
-                        <Zap size={32} className="text-emerald-500 fill-emerald-500" />
-                        آخر المستجدات
-                    </h3>
+                    <div className="flex items-center gap-4">
+                      <h3 className="text-3xl font-black text-slate-900 dark:text-white flex items-center gap-3">
+                          <Zap size={32} className="text-emerald-500 fill-emerald-500" />
+                          آخر المستجدات
+                      </h3>
+                      {/* Reorder Toggle Button */}
+                      <button 
+                        onClick={() => setIsReorderMode(!isReorderMode)}
+                        className={`flex items-center gap-2 px-4 py-2 rounded-full text-xs font-black transition-all ${isReorderMode ? 'bg-emerald-600 text-white shadow-lg' : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200'}`}
+                      >
+                        {isReorderMode ? <Check size={14} /> : <ArrowUpDown size={14} />}
+                        {isReorderMode ? 'تم الترتيب' : 'إعادة ترتيب'}
+                      </button>
+                    </div>
                     
                     <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-hide no-scrollbar -mx-4 px-4 md:mx-0 md:px-0">
                         <div className="flex items-center gap-2 px-3 py-1 bg-slate-100 dark:bg-slate-800 rounded-full text-slate-400">
@@ -310,12 +357,15 @@ const App: React.FC = () => {
                 {isLoading ? (
                     Array(4).fill(0).map((_, idx) => <Skeleton key={idx} variant="horizontal" />)
                 ) : displayedFeedArticles.length > 0 ? (
-                    displayedFeedArticles.map(article => (
+                    displayedFeedArticles.map((article, idx) => (
                     <div key={article.id} className="animate-fade-in">
                         <ArticleCard 
                             article={article} 
                             onClick={handleArticleClick} 
                             variant="horizontal" 
+                            isReorderMode={isReorderMode}
+                            onMoveUp={() => moveArticle(article.id, 'up')}
+                            onMoveDown={() => moveArticle(article.id, 'down')}
                         />
                     </div>
                     ))
@@ -365,7 +415,7 @@ const App: React.FC = () => {
               </div>
               
               <div className="space-y-8">
-                {MOCK_ARTICLES.slice(0, 5).map((article, idx) => (
+                {masterArticles.slice(0, 5).map((article, idx) => (
                   <div 
                     key={article.id} 
                     className="flex gap-5 group cursor-pointer items-start border-b border-slate-50 dark:border-slate-800 pb-6 last:border-0"

@@ -189,7 +189,6 @@ const ArticleDetail: React.FC<ArticleDetailProps> = ({ article, onBack, onNaviga
 
   return (
     <div className="bg-white dark:bg-slate-950 min-h-screen animate-fade-in pb-20">
-      {/* Article Navigation & Controls */}
       <div className="sticky top-[84px] md:top-[92px] z-30 bg-white/90 dark:bg-slate-950/90 backdrop-blur-md border-b border-slate-100 dark:border-slate-800 py-3 shadow-sm">
         <div className="container mx-auto px-4 flex flex-wrap justify-between items-center gap-4">
              <button 
@@ -202,7 +201,6 @@ const ArticleDetail: React.FC<ArticleDetailProps> = ({ article, onBack, onNaviga
             </button>
             
             <div className="flex items-center gap-3">
-                {/* Smart Summary Button */}
                 <button 
                   onClick={handleSummarize}
                   className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-white rounded-2xl font-black text-xs transition-all shadow-lg shadow-emerald-900/20 active:scale-95 group"
@@ -211,7 +209,6 @@ const ArticleDetail: React.FC<ArticleDetailProps> = ({ article, onBack, onNaviga
                   <span>ملخص ذكي</span>
                 </button>
 
-                {/* Font Size & Reading Mode Controls */}
                 <div className="flex items-center gap-1 bg-white dark:bg-slate-900 px-2 py-1.5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm">
                     <button 
                       onClick={handleDecreaseFont}
@@ -319,7 +316,6 @@ const ArticleDetail: React.FC<ArticleDetailProps> = ({ article, onBack, onNaviga
              <div className="bg-slate-50 dark:bg-slate-900 p-4 text-center text-sm text-slate-500 dark:text-slate-400 italic font-tajawal">مصدر الصورة: Entrepreneur NASHRA Archive</div>
         </div>
 
-        {/* Dynamic Content Area */}
         <div className="prose prose-xl prose-slate dark:prose-invert max-w-none text-slate-800 dark:text-slate-200 mx-auto">
             <div 
               className="leading-[1.8] whitespace-pre-line font-amiri tracking-wide px-2 md:px-10 transition-all duration-300 antialiased"
@@ -329,7 +325,6 @@ const ArticleDetail: React.FC<ArticleDetailProps> = ({ article, onBack, onNaviga
             </div>
         </div>
 
-        {/* Comments Section */}
         <div id="comments-section" className="mt-16 p-8 md:p-12 bg-slate-50 dark:bg-slate-900/50 rounded-[3rem] border border-slate-100 dark:border-slate-800 shadow-sm">
             <h3 className="text-3xl font-black mb-10 flex items-center gap-4 text-slate-900 dark:text-white">
               <div className="p-3 bg-emerald-600 text-white rounded-2xl shadow-lg shadow-emerald-200/50">
@@ -468,7 +463,6 @@ const ArticleDetail: React.FC<ArticleDetailProps> = ({ article, onBack, onNaviga
         </div>
       </article>
 
-      {/* Summary Modal Integration */}
       <SummaryModal 
         isOpen={isSummaryOpen}
         onClose={() => setIsSummaryOpen(false)}
@@ -476,7 +470,8 @@ const ArticleDetail: React.FC<ArticleDetailProps> = ({ article, onBack, onNaviga
         summary={summary}
         loading={summaryLoading}
         error={summaryError}
-        onOpenArticle={() => setIsSummaryOpen(false)} // Already on the article
+        onOpenArticle={() => setIsSummaryOpen(false)}
+        showViewFullButton={false}
       />
     </div>
   );
