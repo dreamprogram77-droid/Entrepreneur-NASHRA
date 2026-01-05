@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Menu, X, Rocket, Search, ChevronLeft, Play, ArrowLeft, Twitter, Linkedin, Facebook, Sun, Moon, Calendar, Filter, XCircle, Sparkles } from 'lucide-react';
+import { Menu, X, Rocket, Search, ChevronLeft, Play, ArrowLeft, Twitter, Linkedin, Facebook, Sun, Moon, Calendar, Filter, XCircle, Sparkles, Zap, Clock, ChevronRight } from 'lucide-react';
 import { NAV_LINKS, MOCK_ARTICLES } from '../constants';
 import { Article, Category } from '../types';
 import { summarizeArticle } from '../services/geminiService';
@@ -17,6 +17,7 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ currentView, onNavigate, onArticleSelect, isDarkMode, toggleDarkMode }) => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [isBreakingOpen, setIsBreakingOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [searchCategory, setSearchCategory] = useState<Category | 'ALL'>('ALL');
   const [dateFilter, setDateFilter] = useState<'any' | 'today' | 'week' | 'month'>('any');
@@ -31,6 +32,8 @@ const Header: React.FC<HeaderProps> = ({ currentView, onNavigate, onArticleSelec
   const searchInputRef = useRef<HTMLInputElement>(null);
   const [scrolled, setScrolled] = useState(false);
   const [formattedDate, setFormattedDate] = useState('');
+
+  const breakingArticles = useMemo(() => MOCK_ARTICLES.filter(a => a.isBreaking), []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -49,7 +52,7 @@ const Header: React.FC<HeaderProps> = ({ currentView, onNavigate, onArticleSelec
       searchInputRef.current.focus();
     }
     
-    if (isSearchOpen) {
+    if (isSearchOpen || isBreakingOpen) {
       document.body.style.overflow = 'hidden';
     } else {
       document.body.style.overflow = 'unset';
@@ -58,7 +61,7 @@ const Header: React.FC<HeaderProps> = ({ currentView, onNavigate, onArticleSelec
     return () => {
       document.body.style.overflow = 'unset';
     };
-  }, [isSearchOpen]);
+  }, [isSearchOpen, isBreakingOpen]);
 
   const handleNavClick = (view: string) => {
     onNavigate(view);
@@ -66,17 +69,16 @@ const Header: React.FC<HeaderProps> = ({ currentView, onNavigate, onArticleSelec
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleSearchClose = () => {
-    setIsSearchOpen(false);
+  // Fix: Added missing clearFilters function
+  const clearFilters = () => {
     setSearchQuery('');
     setSearchCategory('ALL');
     setDateFilter('any');
   };
 
-  const clearFilters = () => {
-    setSearchQuery('');
-    setSearchCategory('ALL');
-    setDateFilter('any');
+  const handleSearchClose = () => {
+    setIsSearchOpen(false);
+    clearFilters();
   };
 
   const handleSummarizeResult = async (e: React.MouseEvent, article: Article) => {
@@ -127,6 +129,7 @@ const Header: React.FC<HeaderProps> = ({ currentView, onNavigate, onArticleSelec
   const handleSearchResultClick = (article: Article) => {
     onArticleSelect(article);
     handleSearchClose();
+    setIsBreakingOpen(false);
   };
 
   const SocialIcons = ({ className = "", iconSize = 18 }: { className?: string; iconSize?: number }) => (
@@ -211,6 +214,20 @@ const Header: React.FC<HeaderProps> = ({ currentView, onNavigate, onArticleSelec
               </nav>
 
               <div className="hidden md:flex items-center gap-3">
+                {/* Breaking News Toggle */}
+                <button 
+                  onClick={() => setIsBreakingOpen(true)}
+                  className={`relative flex items-center gap-2 px-4 py-2 bg-rose-50 dark:bg-rose-950/20 text-rose-600 dark:text-rose-400 rounded-full font-black text-xs transition-all hover:bg-rose-100 dark:hover:bg-rose-900/30 group ${scrolled ? 'h-9' : 'h-10'}`}
+                >
+                  <Zap size={16} className="fill-current animate-pulse" />
+                  <span>عاجل</span>
+                  {breakingArticles.length > 0 && (
+                    <span className="absolute -top-1 -left-1 w-5 h-5 bg-rose-600 text-white rounded-full flex items-center justify-center text-[10px] font-black border-2 border-white dark:border-slate-950 shadow-sm">
+                      {breakingArticles.length}
+                    </span>
+                  )}
+                </button>
+
                 <button 
                   onClick={() => setIsSearchOpen(true)}
                   className={`flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-emerald-600 dark:hover:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-slate-900 rounded-full transition-all duration-300 group/search ${scrolled ? 'w-9 h-9' : 'w-10 h-10'}`}
@@ -225,6 +242,17 @@ const Header: React.FC<HeaderProps> = ({ currentView, onNavigate, onArticleSelec
               </div>
 
               <div className="flex items-center gap-2 md:hidden">
+                <button 
+                  onClick={() => setIsBreakingOpen(true)}
+                  className="p-2 text-rose-600 dark:text-rose-400 active:bg-rose-50 rounded-full relative"
+                >
+                  <Zap size={22} className="fill-current animate-pulse" />
+                  {breakingArticles.length > 0 && (
+                    <span className="absolute top-1 right-1 w-4 h-4 bg-rose-600 text-white rounded-full flex items-center justify-center text-[8px] font-black border border-white">
+                      {breakingArticles.length}
+                    </span>
+                  )}
+                </button>
                 <button 
                   onClick={() => setIsSearchOpen(true)}
                   className="p-2 text-slate-600 dark:text-slate-400 active:bg-slate-100 dark:active:bg-slate-800 rounded-full transition-colors"
@@ -279,6 +307,85 @@ const Header: React.FC<HeaderProps> = ({ currentView, onNavigate, onArticleSelec
           </div>
         </div>
       </header>
+
+      {/* Breaking News Modal */}
+      {isBreakingOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-xl animate-fade-in overflow-hidden">
+          <div className="bg-white dark:bg-slate-900 w-full max-w-2xl rounded-[3rem] shadow-[0_32px_64px_rgba(0,0,0,0.5)] flex flex-col max-h-[90vh] border border-rose-500/20">
+            <div className="p-8 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between bg-gradient-to-l from-rose-500/5 to-transparent">
+              <div className="flex items-center gap-4">
+                <div className="w-14 h-14 bg-rose-600 rounded-2xl flex items-center justify-center text-white shadow-xl shadow-rose-900/40 animate-pulse">
+                  <Zap size={28} fill="currentColor" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-black text-slate-900 dark:text-white font-tajawal">مركز الأخبار العاجلة</h3>
+                  <div className="flex items-center gap-2 mt-1">
+                    <div className="w-2 h-2 rounded-full bg-rose-600 animate-ping"></div>
+                    <span className="text-xs font-black text-rose-600 dark:text-rose-400 uppercase tracking-widest">تغطية حية ومباشرة</span>
+                  </div>
+                </div>
+              </div>
+              <button 
+                onClick={() => setIsBreakingOpen(false)}
+                className="w-12 h-12 flex items-center justify-center bg-slate-50 dark:bg-slate-800 hover:bg-rose-50 dark:hover:bg-rose-900/20 text-slate-500 dark:text-slate-400 hover:text-rose-600 rounded-full transition-all"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            <div className="overflow-y-auto p-8 no-scrollbar bg-slate-50/30 dark:bg-slate-950/20">
+              <div className="space-y-6">
+                {breakingArticles.length > 0 ? (
+                  breakingArticles.map((article) => (
+                    <div 
+                      key={article.id}
+                      onClick={() => handleSearchResultClick(article)}
+                      className="group bg-white dark:bg-slate-800 p-6 rounded-[2rem] border border-slate-100 dark:border-slate-700 hover:border-rose-400 dark:hover:border-rose-600 transition-all cursor-pointer shadow-sm hover:shadow-xl hover:-translate-y-1"
+                    >
+                      <div className="flex gap-6">
+                        <div className="w-24 h-24 rounded-2xl overflow-hidden flex-shrink-0 shadow-inner">
+                          <img src={article.imageUrl} alt={article.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
+                        </div>
+                        <div className="flex flex-col justify-center gap-2">
+                          <div className="flex items-center gap-3">
+                            <span className="text-[10px] font-black text-rose-600 bg-rose-50 dark:bg-rose-950/40 px-3 py-1 rounded-full uppercase tracking-wider">عاجل</span>
+                            <span className="text-[10px] font-bold text-slate-400 flex items-center gap-1.5 uppercase">
+                              <Clock size={12} className="text-rose-500" />
+                              منذ قليل
+                            </span>
+                          </div>
+                          <h4 className="text-xl font-black text-slate-900 dark:text-white leading-tight font-amiri group-hover:text-rose-600 transition-colors">
+                            {article.title}
+                          </h4>
+                          <div className="flex items-center gap-2 text-xs font-black text-rose-600 opacity-0 group-hover:opacity-100 transition-all -translate-x-2 group-hover:translate-x-0">
+                            <span>عرض التفاصيل</span>
+                            <ArrowLeft size={14} />
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-16 text-slate-400">
+                    <p className="font-bold">لا توجد أخبار عاجلة في الوقت الحالي</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="p-8 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 rounded-b-[3rem]">
+              <button 
+                onClick={() => { handleNavClick('home'); setIsBreakingOpen(false); }}
+                className="w-full py-4 bg-slate-900 dark:bg-slate-800 text-white rounded-2xl font-black flex items-center justify-center gap-3 hover:bg-slate-800 dark:hover:bg-slate-700 transition-all"
+              >
+                <span>مشاهدة جميع الأخبار</span>
+                <ChevronLeft size={20} />
+              </button>
+            </div>
+          </div>
+          <div className="absolute inset-0 -z-10" onClick={() => setIsBreakingOpen(false)}></div>
+        </div>
+      )}
 
       {isSearchOpen && (
         <div className="fixed inset-0 z-[100] flex items-start justify-center pt-4 md:pt-16 bg-slate-900/60 backdrop-blur-md animate-fade-in px-4">
@@ -447,7 +554,7 @@ const Header: React.FC<HeaderProps> = ({ currentView, onNavigate, onArticleSelec
 
       {/* Summary Modal for Search results */}
       <SummaryModal 
-        isOpen={isSummaryOpen}
+        isOpen={isSummaryOpen} 
         onClose={() => setIsSummaryOpen(false)}
         title={activeSummaryArticle?.title || ''}
         summary={summaryText}

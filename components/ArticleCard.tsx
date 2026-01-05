@@ -2,7 +2,7 @@
 import React, { useState, useMemo } from 'react';
 import { Article } from '../types';
 import { MOCK_ARTICLES } from '../constants';
-import { Calendar, User, Clock, ArrowUpRight, Sparkles, Heart, AlertTriangle, Share2, ArrowLeft, Play, Layers, ChevronDown, ChevronUp, ChevronUpIcon, ChevronDownIcon } from 'lucide-react';
+import { Calendar, User, Clock, ArrowUpRight, Sparkles, Heart, AlertTriangle, Share2, ArrowLeft, Play, Layers, ChevronDown, ChevronUp, ChevronUpIcon, ChevronDownIcon, BookOpen } from 'lucide-react';
 import { summarizeArticle } from '../services/geminiService';
 import SummaryModal from './SummaryModal';
 import ShareModal from './ShareModal';
@@ -348,6 +348,25 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
               </div>
               <WarningBadge className="mb-1 py-1.5 px-3 text-[10px] rounded-xl" />
               <h4 className="font-bold text-slate-900 dark:text-white leading-tight group-hover:text-emerald-700 dark:group-hover:text-emerald-400 transition-colors line-clamp-2">{article.title}</h4>
+              
+              <div className="flex flex-col gap-2">
+                  <div className={`overflow-hidden transition-all duration-500 ease-in-out ${isExpanded ? 'max-h-[1000px] mb-2' : 'max-h-12'}`}>
+                    <p className={`text-slate-500 dark:text-slate-400 text-[10px] leading-relaxed font-medium transition-colors group-hover:text-slate-600 dark:group-hover:text-slate-300 ${isExpanded ? '' : 'line-clamp-2'}`}>
+                        {isExpanded ? article.content : article.excerpt}
+                    </p>
+                  </div>
+                  <button 
+                      onClick={toggleExpand}
+                      className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold text-[9px] hover:text-emerald-700 dark:hover:text-emerald-300 transition-all w-fit py-0.5 px-1.5 rounded bg-emerald-50 dark:bg-slate-800/50"
+                  >
+                      {isExpanded ? (
+                          <>إخفاء <ChevronUp size={10} /></>
+                      ) : (
+                          <>قراءة <ChevronDown size={10} /></>
+                      )}
+                  </button>
+              </div>
+
               <div className="flex items-center gap-3 mt-1 text-[9px] text-slate-400 dark:text-slate-500 font-bold">
                   <span 
                     onClick={handleAuthorClick}
@@ -371,7 +390,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
       return (
         <div 
           onClick={() => onClick(article)}
-          className={`group flex flex-col sm:flex-row gap-6 cursor-pointer bg-white dark:bg-slate-900 p-5 rounded-[2.5rem] shadow-sm hover:shadow-2xl hover:scale-[1.01] transition-all duration-500 border border-slate-100 dark:border-slate-800 h-full overflow-hidden relative ${isReorderMode ? 'ring-2 ring-emerald-500/20' : ''}`}
+          className={`group flex flex-col sm:flex-row gap-6 cursor-pointer bg-white dark:bg-slate-900 p-5 rounded-[2.5rem] shadow-sm hover:shadow-2xl hover:scale-[1.01] transition-all duration-500 border border-slate-100 dark:border-slate-800 h-full overflow-hidden relative ${isReorderMode ? 'ring-2 ring-emerald-500/20' : ''} ${isExpanded ? 'bg-slate-50/50 dark:bg-slate-800/20 border-emerald-500/30' : ''}`}
         >
           <div className="flex-shrink-0 w-full sm:w-5/12 lg:w-4/12 h-56 sm:h-auto min-h-[220px] overflow-hidden rounded-3xl relative">
             <img 
@@ -415,15 +434,15 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
               </div>
               
               <div className="flex flex-col gap-3">
-                  <div className={`overflow-hidden transition-all duration-500 ease-in-out ${isExpanded ? 'max-h-[2000px]' : 'max-h-24'}`}>
-                    <p className={`text-slate-500 dark:text-slate-400 text-base md:text-lg leading-relaxed font-medium transition-colors group-hover:text-slate-600 dark:group-hover:text-slate-300 ${isExpanded ? '' : 'line-clamp-2'}`}>
+                  <div className={`overflow-hidden transition-all duration-700 ease-in-out ${isExpanded ? 'max-h-[3000px]' : 'max-h-24'}`}>
+                    <p className={`text-slate-500 dark:text-slate-400 text-base md:text-lg leading-relaxed font-medium transition-colors group-hover:text-slate-600 dark:group-hover:text-slate-300 ${isExpanded ? 'bg-slate-100/30 dark:bg-slate-800/30 p-4 rounded-2xl border-r-2 border-emerald-500' : 'line-clamp-2'}`}>
                         {isExpanded ? article.content : article.excerpt}
                     </p>
                   </div>
                   <div className="flex items-center gap-4">
                     <button 
                         onClick={toggleExpand}
-                        className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold text-xs hover:text-emerald-700 dark:hover:text-emerald-300 transition-all w-fit py-1 px-2 rounded-lg hover:bg-emerald-50 dark:hover:bg-slate-800"
+                        className={`flex items-center gap-1 font-bold text-xs hover:scale-105 transition-all w-fit py-1.5 px-3 rounded-lg ${isExpanded ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' : 'bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400'}`}
                     >
                         {isExpanded ? (
                             <>عرض أقل <ChevronUp size={14} /></>
@@ -431,6 +450,11 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
                             <>إقرأ المزيد <ChevronDown size={14} /></>
                         )}
                     </button>
+                    {isExpanded && (
+                       <button onClick={(e) => { e.stopPropagation(); onClick(article); }} className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold text-xs hover:underline">
+                          <BookOpen size={14} /> عرض المقال كاملاً
+                       </button>
+                    )}
                     <button onClick={handleShare} className="flex items-center gap-1.5 text-slate-400 dark:text-slate-500 font-bold text-xs hover:text-emerald-600 dark:hover:text-emerald-400 transition-all py-1 px-2 rounded-lg hover:bg-emerald-50 dark:hover:bg-slate-800" aria-label="مشاركة">
                       <Share2 size={14} /> مشاركة
                     </button>
@@ -451,7 +475,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
                 </span>
               </div>
               <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold text-xs group-hover:translate-x-[-8px] transition-transform duration-300">
-                <span>عرض المقال</span>
+                <span>عرض التفاصيل</span>
                 <ArrowLeft size={14} />
               </div>
             </div>
@@ -463,7 +487,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
     return (
       <div 
         onClick={() => onClick(article)}
-        className={`group bg-white dark:bg-slate-900 rounded-[2.5rem] overflow-hidden shadow-sm hover:shadow-2xl hover:scale-[1.03] hover:-translate-y-2 transition-all duration-500 border border-slate-100 dark:border-slate-800 cursor-pointer grid grid-rows-[auto_1fr] h-full relative ${isReorderMode ? 'ring-2 ring-emerald-500/20' : ''}`}
+        className={`group bg-white dark:bg-slate-900 rounded-[2.5rem] overflow-hidden shadow-sm hover:shadow-2xl hover:scale-[1.03] hover:-translate-y-2 transition-all duration-500 border border-slate-100 dark:border-slate-800 cursor-pointer grid grid-rows-[auto_1fr] h-full relative ${isReorderMode ? 'ring-2 ring-emerald-500/20' : ''} ${isExpanded ? 'border-emerald-500/30' : ''}`}
       >
         <div className="relative overflow-hidden h-64">
           <img src={article.imageUrl} alt={article.title} className="w-full h-full object-cover transform group-hover:scale-115 transition-transform duration-[2000ms]" />
@@ -502,7 +526,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
           </div>
           
           <div className="flex flex-col gap-3">
-            <div className={`overflow-hidden transition-all duration-500 ease-in-out ${isExpanded ? 'max-h-[2000px]' : 'max-h-24'}`}>
+            <div className={`overflow-hidden transition-all duration-700 ease-in-out ${isExpanded ? 'max-h-[3000px] bg-slate-50 dark:bg-slate-800/30 p-4 rounded-2xl shadow-inner' : 'max-h-24'}`}>
               <p className={`text-slate-500 dark:text-slate-400 text-base leading-relaxed font-medium transition-colors group-hover:text-slate-600 dark:group-hover:text-slate-300 ${isExpanded ? '' : 'line-clamp-3'}`}>
                   {isExpanded ? article.content : article.excerpt}
               </p>
@@ -510,14 +534,19 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
             <div className="flex flex-wrap items-center gap-3">
               <button 
                   onClick={toggleExpand}
-                  className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-bold text-xs hover:text-emerald-700 dark:hover:text-emerald-300 transition-all w-fit py-1 px-2 rounded-lg hover:bg-emerald-50 dark:hover:bg-slate-800"
+                  className={`flex items-center gap-1 font-bold text-xs hover:scale-105 transition-all w-fit py-1.5 px-3 rounded-lg ${isExpanded ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' : 'bg-emerald-50 dark:bg-emerald-950 text-emerald-600 dark:text-emerald-400'}`}
               >
                   {isExpanded ? (
-                      <>عرض أقل <ChevronUp size={14} /></>
+                      <>إخفاء المحتوى <ChevronUp size={14} /></>
                   ) : (
                       <>إقرأ المزيد <ChevronDown size={14} /></>
                   )}
               </button>
+              {isExpanded && (
+                 <button onClick={(e) => { e.stopPropagation(); onClick(article); }} className="text-emerald-600 dark:text-emerald-400 font-bold text-xs hover:underline flex items-center gap-1">
+                   <BookOpen size={14} /> عرض المقال
+                 </button>
+              )}
               <button onClick={handleShare} className="flex items-center gap-1.5 text-slate-400 dark:text-slate-500 font-bold text-xs hover:text-emerald-600 dark:hover:text-emerald-400 transition-all py-1 px-2 rounded-lg hover:bg-emerald-50 dark:hover:bg-slate-800" aria-label="مشاركة">
                 <Share2 size={14} /> مشاركة
               </button>
@@ -548,4 +577,34 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
                   <span className="text-[10px] text-slate-400 dark:text-slate-500 font-bold uppercase tracking-wider">فريق التحرير</span>
                 </div>
               </div>
-              <ArrowLeft size={16} className="text-slate-200 dark:text-slate-700 group-hover:text-
+              <ArrowLeft size={16} className="text-slate-200 dark:text-slate-700 group-hover:text-emerald-500 group-hover:translate-x-[-6px] transition-all duration-300" />
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <>
+      {renderVariant()}
+      <SummaryModal 
+        isOpen={isSummaryOpen} 
+        onClose={() => setIsSummaryOpen(false)} 
+        title={article.title} 
+        summary={summary} 
+        loading={loading} 
+        error={error} 
+        onOpenArticle={() => onClick(article)}
+        showViewFullButton={true}
+      />
+      <ShareModal 
+        isOpen={isShareOpen} 
+        onClose={() => setIsShareOpen(false)} 
+        title={article.title} 
+        url={articleUrl} 
+      />
+    </>
+  );
+};
+
+export default ArticleCard;

@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import Header from './components/Header';
 import MarketTicker from './components/MarketTicker';
+import BreakingNewsTicker from './components/BreakingNewsTicker';
 import ArticleCard from './components/ArticleCard';
 import ArticleDetail from './components/ArticleDetail';
 import AuthorProfile from './components/AuthorProfile';
@@ -443,6 +444,7 @@ const App: React.FC = () => {
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-amiri selection:bg-emerald-200 selection:text-emerald-900">
       <MarketTicker />
+      <BreakingNewsTicker onArticleClick={handleArticleClick} />
       <Header 
         currentView={currentView} 
         onNavigate={handleNavigate} 
