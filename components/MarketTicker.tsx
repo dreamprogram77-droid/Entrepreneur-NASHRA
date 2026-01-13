@@ -1,22 +1,45 @@
 
-import React from 'react';
-import { MARKET_DATA } from '../constants';
-import { TrendingUp, TrendingDown, BarChart2 } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { TrendingUp, TrendingDown, BarChart2, Loader2 } from 'lucide-react';
+import { fetchRealtimeMarketData, MarketItem } from '../services/marketService';
+import { MARKET_DATA as MOCK_DATA } from '../constants';
 
 const MarketTicker: React.FC = () => {
+  const [marketItems, setMarketItems] = useState<MarketItem[]>(MOCK_DATA);
+  const [loading, setLoading] = useState(true);
+
+  const loadData = async () => {
+    try {
+      const data = await fetchRealtimeMarketData();
+      setMarketItems(data);
+    } catch (error) {
+      console.error("Failed to refresh market data");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+    // Refresh data every 2 minutes
+    const interval = setInterval(loadData, 120000);
+    return () => clearInterval(interval);
+  }, []);
+
   return (
     <div className="bg-slate-950 text-white flex items-center relative z-50 overflow-hidden border-b border-white/5 h-9">
       {/* Markets Badge */}
       <div className="bg-slate-800 px-4 h-full flex items-center gap-2 z-10 shadow-[5px_0_15px_rgba(0,0,0,0.3)] relative">
         <BarChart2 size={12} className="text-emerald-400" />
-        <span className="text-[10px] font-black uppercase tracking-widest whitespace-nowrap text-slate-300 font-tajawal">مؤشرات الأسواق</span>
+        <span className="text-[10px] font-black uppercase tracking-widest whitespace-nowrap text-slate-300 font-tajawal">مؤشرات حية</span>
+        {loading && <Loader2 size={10} className="animate-spin text-emerald-500 ml-1" />}
       </div>
 
       {/* Scrolling Ticker Content */}
       <div className="flex-grow relative overflow-hidden h-full">
         <div className="animate-ticker flex gap-12 items-center absolute top-0 left-0 h-full whitespace-nowrap px-10">
-          {MARKET_DATA.map((item, idx) => (
-            <div key={`market-${idx}`} className="flex items-center gap-3 text-[11px] font-bold">
+          {marketItems.map((item, idx) => (
+            <div key={`market-${idx}-${item.symbol}`} className="flex items-center gap-3 text-[11px] font-bold">
               <span className="text-slate-500 font-mono uppercase tracking-tighter">{item.symbol}</span>
               <span className="font-mono text-slate-200">{item.price}</span>
               <span className={`flex items-center gap-1 font-mono ${item.change.startsWith('+') ? 'text-emerald-500' : 'text-rose-500'}`}>
@@ -28,8 +51,8 @@ const MarketTicker: React.FC = () => {
           ))}
           
           {/* Duplicate for seamless loop */}
-          {MARKET_DATA.map((item, idx) => (
-            <div key={`market-dup-${idx}`} className="flex items-center gap-3 text-[11px] font-bold">
+          {marketItems.map((item, idx) => (
+            <div key={`market-dup-${idx}-${item.symbol}`} className="flex items-center gap-3 text-[11px] font-bold">
               <span className="text-slate-500 font-mono uppercase tracking-tighter">{item.symbol}</span>
               <span className="font-mono text-slate-200">{item.price}</span>
               <span className={`flex items-center gap-1 font-mono ${item.change.startsWith('+') ? 'text-emerald-500' : 'text-rose-500'}`}>
