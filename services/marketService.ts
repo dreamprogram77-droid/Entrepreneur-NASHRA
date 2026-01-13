@@ -44,9 +44,10 @@ export const fetchRealtimeMarketData = async (): Promise<MarketItem[]> => {
     console.error("Market data fetch error:", error);
     // Fallback data if API fails
     return [
-      { symbol: 'BTC', price: '66,432', change: '+1.2%' },
-      { symbol: 'AAPL', price: '192.25', change: '+0.5%' },
-      { symbol: 'NVDA', price: '890.10', change: '+2.8%' }
+      { symbol: 'BTC', price: '68,210', change: '+1.4%' },
+      { symbol: 'AAPL', price: '215.30', change: '+0.8%' },
+      { symbol: 'NVDA', price: '124.50', change: '+3.2%' },
+      { symbol: 'ETH', price: '2,650', change: '-0.5%' }
     ];
   }
 };

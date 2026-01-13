@@ -9,11 +9,16 @@ const MarketTicker: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   const loadData = async () => {
+    // Only set loading to true on first load to prevent UI jumps during refreshes
+    if (marketItems.length === 0) setLoading(true);
+    
     try {
       const data = await fetchRealtimeMarketData();
-      setMarketItems(data);
+      if (data && data.length > 0) {
+        setMarketItems(data);
+      }
     } catch (error) {
-      console.error("Failed to refresh market data");
+      console.error("Failed to refresh market data, keeping existing data.");
     } finally {
       setLoading(false);
     }
@@ -21,7 +26,7 @@ const MarketTicker: React.FC = () => {
 
   useEffect(() => {
     loadData();
-    // Refresh data every 2 minutes
+    // Refresh data every 2 minutes (120,000ms)
     const interval = setInterval(loadData, 120000);
     return () => clearInterval(interval);
   }, []);
@@ -42,8 +47,8 @@ const MarketTicker: React.FC = () => {
             <div key={`market-${idx}-${item.symbol}`} className="flex items-center gap-3 text-[11px] font-bold">
               <span className="text-slate-500 font-mono uppercase tracking-tighter">{item.symbol}</span>
               <span className="font-mono text-slate-200">{item.price}</span>
-              <span className={`flex items-center gap-1 font-mono ${item.change.startsWith('+') ? 'text-emerald-500' : 'text-rose-500'}`}>
-                {item.change.startsWith('+') ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+              <span className={`flex items-center gap-1 font-mono ${item.change.includes('+') ? 'text-emerald-500' : 'text-rose-500'}`}>
+                {item.change.includes('+') ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
                 {item.change}
               </span>
               <span className="text-slate-800">|</span>
@@ -55,8 +60,8 @@ const MarketTicker: React.FC = () => {
             <div key={`market-dup-${idx}-${item.symbol}`} className="flex items-center gap-3 text-[11px] font-bold">
               <span className="text-slate-500 font-mono uppercase tracking-tighter">{item.symbol}</span>
               <span className="font-mono text-slate-200">{item.price}</span>
-              <span className={`flex items-center gap-1 font-mono ${item.change.startsWith('+') ? 'text-emerald-500' : 'text-rose-500'}`}>
-                {item.change.startsWith('+') ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+              <span className={`flex items-center gap-1 font-mono ${item.change.includes('+') ? 'text-emerald-500' : 'text-rose-500'}`}>
+                {item.change.includes('+') ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
                 {item.change}
               </span>
               <span className="text-slate-800">|</span>
@@ -66,10 +71,4 @@ const MarketTicker: React.FC = () => {
       </div>
       
       {/* Decorative Gradient Overlays */}
-      <div className="absolute right-[115px] top-0 bottom-0 w-12 bg-gradient-to-l from-slate-950 to-transparent pointer-events-none z-[5]"></div>
-      <div className="absolute left-0 top-0 bottom-0 w-12 bg-gradient-to-r from-slate-950 to-transparent pointer-events-none z-[5]"></div>
-    </div>
-  );
-};
-
-export default MarketTicker;
+      <div className="absolute right-[115px] top-0 bottom-0 w-12 bg-gradient-to-l from-slate-950 to-transparent
