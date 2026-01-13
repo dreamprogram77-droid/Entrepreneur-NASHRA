@@ -32,6 +32,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [imageLoaded, setImageLoaded] = useState(false);
   
   const [isLiked, setIsLiked] = useState(() => {
     try {
@@ -160,8 +161,13 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
                 : 'hover:bg-emerald-50 dark:hover:bg-emerald-900/20 bg-slate-50/50 dark:bg-slate-800/30'
               }`}
             >
-              <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0">
-                <img src={rel.imageUrl} alt={rel.title} className="w-full h-full object-cover" />
+              <div className="w-10 h-10 rounded-lg overflow-hidden flex-shrink-0 bg-slate-200 dark:bg-slate-800">
+                <img 
+                  loading="lazy"
+                  src={rel.imageUrl} 
+                  alt={rel.title} 
+                  className="w-full h-full object-cover" 
+                />
               </div>
               <div className="flex-grow">
                 <h5 className={`text-xs font-bold leading-tight line-clamp-1 ${theme === 'dark' ? 'text-white' : 'text-slate-800 dark:text-slate-100'}`}>
@@ -223,12 +229,14 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
       return (
         <div 
           onClick={() => onClick(article)}
-          className="group relative rounded-[2.5rem] md:rounded-[3.5rem] overflow-hidden cursor-pointer shadow-2xl h-[500px] md:h-[750px] border border-white/10 dark:border-slate-800 animate-fade-in hover:scale-[1.01] hover:shadow-emerald-900/30 transition-all duration-700 ease-out"
+          className="group relative rounded-[2.5rem] md:rounded-[3.5rem] overflow-hidden cursor-pointer shadow-2xl h-[500px] md:h-[750px] border border-white/10 dark:border-slate-800 animate-fade-in hover:scale-[1.01] hover:shadow-emerald-900/30 transition-all duration-700 ease-out bg-slate-200 dark:bg-slate-900"
         >
           <img 
+            loading="lazy"
             src={article.imageUrl} 
             alt={article.title} 
-            className="absolute inset-0 w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-[3000ms] ease-out"
+            onLoad={() => setImageLoaded(true)}
+            className={`absolute inset-0 w-full h-full object-cover transform group-hover:scale-110 transition-all duration-[3000ms] ease-out ${imageLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-105'}`}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/60 to-transparent transition-opacity duration-500 group-hover:opacity-90"></div>
           
@@ -275,7 +283,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
                   onClick={handleAuthorClick}
                   className="w-12 h-12 md:w-14 md:h-14 rounded-full bg-emerald-500 flex items-center justify-center text-white font-black text-xl shadow-xl ring-4 ring-white/10 overflow-hidden group-hover:ring-emerald-500/50 transition-all duration-500 cursor-pointer"
                 >
-                  <img src={`https://ui-avatars.com/api/?name=${article.author}&background=059669&color=fff`} alt={article.author} />
+                  <img loading="lazy" src={`https://ui-avatars.com/api/?name=${article.author}&background=059669&color=fff`} alt={article.author} />
                 </div>
                 <div className="flex flex-col">
                   <span 
@@ -327,8 +335,14 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
           onClick={() => onClick(article)}
           className={`group grid grid-cols-[theme(spacing.24)_1fr] gap-4 cursor-pointer p-4 rounded-xl hover:bg-white dark:hover:bg-slate-800 hover:shadow-xl hover:scale-[1.02] transition-all duration-300 border border-transparent hover:border-slate-100 dark:hover:border-slate-700 relative ${isReorderMode ? 'ring-2 ring-emerald-500/20' : ''}`}
         >
-          <div className="w-24 h-24 rounded-lg overflow-hidden relative shadow-sm">
-              <img src={article.imageUrl} alt={article.title} className="w-full h-full object-cover transform group-hover:scale-110 transition-transform duration-500" />
+          <div className="w-24 h-24 rounded-lg overflow-hidden relative shadow-sm bg-slate-100 dark:bg-slate-800">
+              <img 
+                loading="lazy"
+                src={article.imageUrl} 
+                alt={article.title} 
+                onLoad={() => setImageLoaded(true)}
+                className={`w-full h-full object-cover transform group-hover:scale-110 transition-all duration-500 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`} 
+              />
               <VideoPlayOverlay size="sm" />
           </div>
           <div className="grid grid-rows-[auto_auto_1fr_auto] gap-1">
@@ -392,11 +406,13 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
           onClick={() => onClick(article)}
           className={`group flex flex-col sm:flex-row gap-6 cursor-pointer bg-white dark:bg-slate-900 p-5 rounded-[2.5rem] shadow-sm hover:shadow-2xl hover:scale-[1.01] transition-all duration-500 border border-slate-100 dark:border-slate-800 h-full overflow-hidden relative ${isReorderMode ? 'ring-2 ring-emerald-500/20' : ''} ${isExpanded ? 'bg-slate-50/50 dark:bg-slate-800/20 border-emerald-500/30' : ''}`}
         >
-          <div className="flex-shrink-0 w-full sm:w-5/12 lg:w-4/12 h-56 sm:h-auto min-h-[220px] overflow-hidden rounded-3xl relative">
+          <div className="flex-shrink-0 w-full sm:w-5/12 lg:w-4/12 h-56 sm:h-auto min-h-[220px] overflow-hidden rounded-3xl relative bg-slate-100 dark:bg-slate-800">
             <img 
+              loading="lazy"
               src={article.imageUrl} 
               alt={article.title} 
-              className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-1000"
+              onLoad={() => setImageLoaded(true)}
+              className={`w-full h-full object-cover transform group-hover:scale-105 transition-all duration-1000 ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
             />
             
             <VideoPlayOverlay size="md" />
@@ -489,8 +505,14 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
         onClick={() => onClick(article)}
         className={`group bg-white dark:bg-slate-900 rounded-[2.5rem] overflow-hidden shadow-sm hover:shadow-2xl hover:scale-[1.03] hover:-translate-y-2 transition-all duration-500 border border-slate-100 dark:border-slate-800 cursor-pointer grid grid-rows-[auto_1fr] h-full relative ${isReorderMode ? 'ring-2 ring-emerald-500/20' : ''} ${isExpanded ? 'border-emerald-500/30' : ''}`}
       >
-        <div className="relative overflow-hidden h-64">
-          <img src={article.imageUrl} alt={article.title} className="w-full h-full object-cover transform group-hover:scale-115 transition-transform duration-[2000ms]" />
+        <div className="relative overflow-hidden h-64 bg-slate-100 dark:bg-slate-800">
+          <img 
+            loading="lazy"
+            src={article.imageUrl} 
+            alt={article.title} 
+            onLoad={() => setImageLoaded(true)}
+            className={`w-full h-full object-cover transform group-hover:scale-115 transition-all duration-[2000ms] ${imageLoaded ? 'opacity-100' : 'opacity-0'}`} 
+          />
           
           <VideoPlayOverlay size="md" />
 
@@ -565,7 +587,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
                   onClick={handleAuthorClick}
                   className="w-9 h-9 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-700 dark:text-emerald-400 text-sm font-black ring-4 ring-emerald-50 dark:ring-emerald-950 group-hover:ring-emerald-100 dark:group-hover:ring-emerald-900 transition-all duration-500 overflow-hidden cursor-pointer"
                 >
-                  <img src={`https://ui-avatars.com/api/?name=${article.author}&background=059669&color=fff`} alt={article.author} />
+                  <img loading="lazy" src={`https://ui-avatars.com/api/?name=${article.author}&background=059669&color=fff`} alt={article.author} />
                 </div>
                 <div className="flex flex-col">
                   <span 
