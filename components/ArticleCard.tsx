@@ -32,6 +32,8 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isExpanded, setIsExpanded] = useState(false);
+  
+  // حالة لمتابعة اكتمال تحميل الصورة لإضافة تأثير Fade-in
   const [imageLoaded, setImageLoaded] = useState(false);
   
   const [isLiked, setIsLiked] = useState(() => {
@@ -231,12 +233,14 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
           onClick={() => onClick(article)}
           className="group relative rounded-[2.5rem] md:rounded-[3.5rem] overflow-hidden cursor-pointer shadow-2xl h-[500px] md:h-[750px] border border-white/10 dark:border-slate-800 animate-fade-in hover:scale-[1.01] hover:shadow-emerald-900/30 transition-all duration-700 ease-out bg-slate-200 dark:bg-slate-900"
         >
+          {/* Lazy Loaded Image with smooth Fade-in */}
+          <div className={`absolute inset-0 bg-slate-200 dark:bg-slate-800 transition-opacity duration-1000 ${imageLoaded ? 'opacity-0' : 'opacity-100'}`}></div>
           <img 
             loading="lazy"
             src={article.imageUrl} 
             alt={article.title} 
             onLoad={() => setImageLoaded(true)}
-            className={`absolute inset-0 w-full h-full object-cover transform group-hover:scale-110 transition-all duration-[3000ms] ease-out ${imageLoaded ? 'opacity-100 scale-100' : 'opacity-0 scale-105'}`}
+            className={`absolute inset-0 w-full h-full object-cover transform group-hover:scale-110 transition-all duration-[3000ms] ease-out ${imageLoaded ? 'opacity-100' : 'opacity-0'}`}
           />
           <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-900/60 to-transparent transition-opacity duration-500 group-hover:opacity-90"></div>
           
@@ -407,6 +411,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
           className={`group flex flex-col sm:flex-row gap-6 cursor-pointer bg-white dark:bg-slate-900 p-5 rounded-[2.5rem] shadow-sm hover:shadow-2xl hover:scale-[1.01] transition-all duration-500 border border-slate-100 dark:border-slate-800 h-full overflow-hidden relative ${isReorderMode ? 'ring-2 ring-emerald-500/20' : ''} ${isExpanded ? 'bg-slate-50/50 dark:bg-slate-800/20 border-emerald-500/30' : ''}`}
         >
           <div className="flex-shrink-0 w-full sm:w-5/12 lg:w-4/12 h-56 sm:h-auto min-h-[220px] overflow-hidden rounded-3xl relative bg-slate-100 dark:bg-slate-800">
+            <div className={`absolute inset-0 bg-slate-100 dark:bg-slate-800 transition-opacity duration-700 ${imageLoaded ? 'opacity-0' : 'opacity-100'}`}></div>
             <img 
               loading="lazy"
               src={article.imageUrl} 
@@ -506,6 +511,7 @@ const ArticleCard: React.FC<ArticleCardProps> = ({
         className={`group bg-white dark:bg-slate-900 rounded-[2.5rem] overflow-hidden shadow-sm hover:shadow-2xl hover:scale-[1.03] hover:-translate-y-2 transition-all duration-500 border border-slate-100 dark:border-slate-800 cursor-pointer grid grid-rows-[auto_1fr] h-full relative ${isReorderMode ? 'ring-2 ring-emerald-500/20' : ''} ${isExpanded ? 'border-emerald-500/30' : ''}`}
       >
         <div className="relative overflow-hidden h-64 bg-slate-100 dark:bg-slate-800">
+          <div className={`absolute inset-0 bg-slate-100 dark:bg-slate-800 transition-opacity duration-700 ${imageLoaded ? 'opacity-0' : 'opacity-100'}`}></div>
           <img 
             loading="lazy"
             src={article.imageUrl} 
